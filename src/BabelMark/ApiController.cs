@@ -38,11 +38,19 @@ namespace BabelMark
                         jobject = JObject.Parse(jsonText);
                         var html = jobject["html"]?.ToString() ?? string.Empty;
 
-                        // Generates also a clean html in order to compare implems
-                        var settings = HtmlSettings.Pretty();
-                        settings.IsFragmentOnly = true;
-                        var result = Uglify.Html(html, settings);
-                        jobject["html_clean"] = result.Code;
+                        if (string.IsNullOrWhiteSpace(html))
+                        {
+                            html = string.Empty;
+                            jobject["html_clean"] = html;
+                        }
+                        else
+                        {
+                            // Generates also a clean html in order to compare implems
+                            var settings = HtmlSettings.Pretty();
+                            settings.IsFragmentOnly = true;
+                            var result = Uglify.Html(html, settings);
+                            jobject["html_clean"] = result.Code;
+                        }
                     }
                     catch (Exception exception)
                     {
@@ -56,10 +64,10 @@ namespace BabelMark
                 }
                 clock.Stop();
 
+                // Set common fields
                 jobject["name"] = implem.Name; // use the name from the registry, not the one returned
                 jobject["repo"] = implem.Repo;
                 jobject["lang"] = implem.Lang;
-                // name, html, version, JObject               
                 jobject["time"] = clock.Elapsed.TotalSeconds;
 
                 return jobject;
