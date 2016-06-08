@@ -33,7 +33,8 @@ namespace BabelMark
                 {
                     try
                     {
-                        var jsonText = await httpClient.GetStringAsync(implem.Url + "text=" + Uri.EscapeDataString(text));
+                        var jsonText =
+                            await httpClient.GetStringAsync(implem.Url + "text=" + Uri.EscapeDataString(text));
                         jobject = JObject.Parse(jsonText);
                         var html = jobject["html"]?.ToString() ?? string.Empty;
 
@@ -48,7 +49,6 @@ namespace BabelMark
                         // In case we have an error, we still return an object
                         jobject = new JObject
                         {
-                            ["name"] = implem.Name,
                             ["version"] = "unknown",
                             ["error"] = GetPrettyMessageFromException(exception)
                         };
@@ -56,6 +56,7 @@ namespace BabelMark
                 }
                 clock.Stop();
 
+                jobject["name"] = implem.Name; // use the name from the registry, not the one returned
                 jobject["repo"] = implem.Repo;
                 jobject["lang"] = implem.Lang;
                 // name, html, version, JObject               
@@ -75,11 +76,15 @@ namespace BabelMark
 
                 await HttpContext.Response.Body.WriteAsync(buffer, 0, buffer.Length);
                 await HttpContext.Response.Body.FlushAsync();
-            }, new ExecutionDataflowBlockOptions() { MaxDegreeOfParallelism = 1});
+            }, new ExecutionDataflowBlockOptions() {MaxDegreeOfParallelism = 1});
 
             getResultBlock.LinkTo(returnResultBlock, new DataflowLinkOptions() {PropagateCompletion = true});
 
             var entries = await MarkdownRegistry.Instance.GetEntriesAsync();
+
+            // We shuffle the entries to random the order of the latency of the results
+            Shuffle(entries);
+
             foreach (var entry in entries)
             {
                 await getResultBlock.SendAsync(entry);
@@ -99,6 +104,21 @@ namespace BabelMark
                 exception = exception.InnerException;
             }
             return builder.ToString();
+        }
+
+        public static void Shuffle<T>(List<T> list)
+        {
+            // from: http://stackoverflow.com/a/1262619/1356325
+            var random = new Random();
+            int n = list.Count;
+            while (n > 1)
+            {
+                n--;
+                int k = random.Next(n + 1);
+                var value = list[k];
+                list[k] = list[n];
+                list[n] = value;
+            }
         }
     }
 }
