@@ -20,6 +20,8 @@ namespace BabelMark
 
     public class MarkdownRegistry
     {
+        private const string PassphraseEnv = "BABELMARK_PASSPHRASE";
+
         private List<MarkdownEntry> entries;
         private DateTime lastTime;
 
@@ -36,6 +38,12 @@ namespace BabelMark
                 return newEntries;
             }
 
+            var passPhrase = Environment.GetEnvironmentVariable(PassphraseEnv)?.Trim();
+            if (string.IsNullOrWhiteSpace(passPhrase))
+            {
+                throw new InvalidOperationException("The BABELMARK_PASSPHRASE env is empty");
+            }
+
             try
             {
                 var client = new HttpClient();
@@ -50,6 +58,13 @@ namespace BabelMark
                 foreach (var entry in jsonRegistry)
                 {
                     entry.Value.Name = entry.Key;
+
+                    // Decrypt an url if it doesn't starts by http
+                    if (!entry.Value.Url.StartsWith("http"))
+                    {
+                        entry.Value.Url = StringCipher.Decrypt(entry.Value.Url, passPhrase);
+                    }
+
                     newEntries.Add(entry.Value);
                 }
 
