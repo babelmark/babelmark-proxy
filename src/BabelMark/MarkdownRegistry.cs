@@ -20,7 +20,7 @@ namespace BabelMark
 
     public class MarkdownRegistry
     {
-        private const string PassphraseEnv = "BABELMARK_PASSPHRASE";
+        public const string PassphraseEnv = "BABELMARK_PASSPHRASE";
 
         private List<MarkdownEntry> entries;
         private DateTime lastTime;
@@ -52,20 +52,18 @@ namespace BabelMark
                         client.GetStringAsync(
                             "https://raw.githubusercontent.com/babelmark/babelmark-registry/master/registry.json");
 
-                var jsonRegistry = JsonConvert.DeserializeObject<Dictionary<string, MarkdownEntry>>(textRegistry);
+                var jsonRegistry = JsonConvert.DeserializeObject<List<MarkdownEntry>>(textRegistry);
 
                 newEntries.Clear();
                 foreach (var entry in jsonRegistry)
                 {
-                    entry.Value.Name = entry.Key;
-
                     // Decrypt an url if it doesn't starts by http
-                    if (!entry.Value.Url.StartsWith("http"))
+                    if (!entry.Url.StartsWith("http"))
                     {
-                        entry.Value.Url = StringCipher.Decrypt(entry.Value.Url, passPhrase);
+                        entry.Url = StringCipher.Decrypt(entry.Url, passPhrase);
                     }
 
-                    newEntries.Add(entry.Value);
+                    newEntries.Add(entry);
                 }
 
                 entries = newEntries;

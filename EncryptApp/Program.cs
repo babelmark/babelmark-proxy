@@ -5,6 +5,7 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
 using BabelMark;
+using Newtonsoft.Json;
 
 namespace EncryptApp
 {
@@ -12,22 +13,37 @@ namespace EncryptApp
     {
         static int Main(string[] args)
         {
-            if (args.Length != 2)
+            if (args.Length != 1)
             {
-                Console.WriteLine("Usage: string_to_encode passphrase");
+                Console.WriteLine("Usage: passphrase");
                 return 1;
             }
 
-            var result = StringCipher.Encrypt(args[0], args[1]);
+            Environment.SetEnvironmentVariable(MarkdownRegistry.PassphraseEnv, args[0]);
 
-            var check = StringCipher.Decrypt(result, args[1]);
-            if (check != args[0])
+            var entries = MarkdownRegistry.Instance.GetEntriesAsync().Result;
+
+
+            foreach (var entry in entries)
             {
-                Console.WriteLine("Unexpected error while encrypt/decrypt. Not matching");
-                return 1;
+                if (!entry.Url.StartsWith("http"))
+                {
+                    entry.Url = StringCipher.Decrypt(entry.Url, args[0]);
+                }
+                else
+                {
+                    var originalUrl = entry.Url;
+                    entry.Url = StringCipher.Encrypt(entry.Url, args[0]);
+                    var testDecrypt = StringCipher.Decrypt(entry.Url, args[0]);
+                    if (originalUrl != testDecrypt)
+                    {
+                        Console.WriteLine("Unexpected error while encrypt/decrypt. Not matching");
+                        return 1;
+                    }
+                }
             }
 
-            Console.WriteLine(result);
+            Console.WriteLine(JsonConvert.SerializeObject(entries, Formatting.Indented));
 
             return 0;
         }
