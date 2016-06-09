@@ -10,6 +10,7 @@ using System.Threading.Tasks.Dataflow;
 using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using NUglify;
@@ -19,6 +20,13 @@ namespace BabelMark
 {
     public class ApiController : Controller
     {
+        private readonly ILogger<ApiController> logger;
+
+        public ApiController(ILogger<ApiController> logger)
+        {
+            this.logger = logger;
+        }
+
         [HttpGet]
         [Route("api/get")]
         public async Task Get([FromQuery] string text)
@@ -29,9 +37,9 @@ namespace BabelMark
             {
                 var clock = Stopwatch.StartNew();
                 JObject jobject;
-                using (var httpClient = new HttpClient())
+                try
                 {
-                    try
+                    using (var httpClient = new HttpClient())
                     {
                         var jsonText =
                             await httpClient.GetStringAsync(implem.Url + "text=" + Uri.EscapeDataString(text));
@@ -52,15 +60,17 @@ namespace BabelMark
                             jobject["html_clean"] = result.Code;
                         }
                     }
-                    catch (Exception exception)
+                }
+                catch (Exception exception)
+                {
+                    logger.LogError("Unexpected exception: " + exception);
+
+                    // In case we have an error, we still return an object
+                    jobject = new JObject
                     {
-                        // In case we have an error, we still return an object
-                        jobject = new JObject
-                        {
-                            ["version"] = "unknown",
-                            ["error"] = GetPrettyMessageFromException(exception)
-                        };
-                    }
+                        ["version"] = "unknown",
+                        ["error"] = GetPrettyMessageFromException(exception)
+                    };
                 }
                 clock.Stop();
 
@@ -88,19 +98,26 @@ namespace BabelMark
 
             getResultBlock.LinkTo(returnResultBlock, new DataflowLinkOptions() {PropagateCompletion = true});
 
-            var entries = await MarkdownRegistry.Instance.GetEntriesAsync();
-
-            // We shuffle the entries to random the order of the latency of the results
-            Shuffle(entries);
-
-            foreach (var entry in entries)
+            try
             {
-                await getResultBlock.SendAsync(entry);
+                var entries = await MarkdownRegistry.Instance.GetEntriesAsync();
+
+                // We shuffle the entries to random the order of the latency of the results
+                Shuffle(entries);
+
+                foreach (var entry in entries)
+                {
+                    await getResultBlock.SendAsync(entry);
+                }
+
+                getResultBlock.Complete();
+
+                await returnResultBlock.Completion;
             }
-
-            getResultBlock.Complete();
-
-            await returnResultBlock.Completion;
+            catch (Exception ex)
+            {
+                logger.LogError("Unexpected exception while fetching/returning: " + ex);
+            }
         }
 
         private static string GetPrettyMessageFromException(Exception exception)
