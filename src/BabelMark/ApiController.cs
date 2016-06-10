@@ -31,7 +31,12 @@ namespace BabelMark
         [Route("api/get")]
         public async Task Get([FromQuery] string text)
         {
+            // Make sure that the length is limited to 1000 characters
             text = text ?? string.Empty;
+            if (text.Length > 1000)
+            {
+                text = text.Substring(0, 1000);
+            }
 
             var getResultBlock = new TransformBlock<MarkdownEntry, JObject>(async implem =>
             {
