@@ -77,6 +77,7 @@ namespace BabelMark
                 // Set common fields
                 jobject["name"] = implem.Name; // use the name from the registry, not the one returned
                 jobject["repo"] = implem.Repo;
+                jobject["cmark"] = implem.CommonMark;
                 jobject["lang"] = implem.Lang;
                 jobject["time"] = clock.Elapsed.TotalSeconds;
 

@@ -16,6 +16,8 @@ namespace BabelMark
         public string Lang { get; set; }
 
         public string Repo { get; set; }
+
+        public bool CommonMark { get; set; }
     }
 
     public class MarkdownRegistry
