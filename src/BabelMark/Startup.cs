@@ -58,6 +58,8 @@ namespace BabelMark
 
             app.UseApplicationInsightsExceptionTelemetry();
 
+            app.UseMiddleware<RequestThrottlingMiddleware>();
+
             app.UseMvc();
         }
     }
