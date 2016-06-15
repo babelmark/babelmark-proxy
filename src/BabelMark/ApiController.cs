@@ -55,6 +55,7 @@ namespace BabelMark
                         {
                             html = string.Empty;
                             jobject["html_clean"] = html;
+                            jobject["html_safe"] = html;
                         }
                         else
                         {
@@ -63,6 +64,11 @@ namespace BabelMark
                             settings.IsFragmentOnly = true;
                             var result = Uglify.Html(html, settings);
                             jobject["html_clean"] = result.Code;
+
+                            // Remove any javascript
+                            settings.RemoveJavaScript = true;
+                            result = Uglify.Html(html, settings);
+                            jobject["html_safe"] = result.Code;
                         }
                     }
                 }

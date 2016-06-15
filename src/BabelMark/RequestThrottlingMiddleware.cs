@@ -97,7 +97,8 @@ namespace BabelMark
                     ["lang"] = "",
                     ["time"] = 0.0,
                     ["html"] = errorText,
-                    ["html_clean"] = errorText
+                    ["html_clean"] = errorText,
+                    ["html_safe"] = errorText
                 };
 
                 jobject.WriteTo(writer);
