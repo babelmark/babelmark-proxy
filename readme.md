@@ -1,6 +1,6 @@
 # babelmark-proxy
 
-This is the proxy server that is powering [babelmark3](http://babelmark.github.io)
+This is the proxy server that is powering [babelmark3](https://babelmark.github.io)
 
 
 ## Internals
