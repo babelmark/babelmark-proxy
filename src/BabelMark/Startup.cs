@@ -51,7 +51,7 @@ namespace BabelMark
 
             app.UseCors(builder =>
             {
-                builder.WithOrigins("http://babelmark.github.io").WithMethods("get").AllowCredentials();
+                builder.WithOrigins("http://babelmark.github.io", "https://babelmark.github.io", "http://johnmacfarlane.net").WithMethods("get").AllowCredentials();
             });
 
             app.UseApplicationInsightsRequestTelemetry();
