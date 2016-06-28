@@ -13,24 +13,28 @@ namespace EncryptApp
     {
         static int Main(string[] args)
         {
-            if (args.Length != 1)
+            if (args.Length != 2)
             {
-                Console.WriteLine("Usage: passphrase");
+                Console.WriteLine("Usage: passphrase decode|encode");
                 return 1;
             }
+
+            if (!(args[1] == "decode" || args[1] == "encode"))
+            {
+                Console.WriteLine("Usage: passphrase decode|encode");
+                Console.WriteLine($"Invalid argument ${args[1]}");
+                return 1;
+            }
+
+            var encode = args[1] == "encode";
 
             Environment.SetEnvironmentVariable(MarkdownRegistry.PassphraseEnv, args[0]);
 
             var entries = MarkdownRegistry.Instance.GetEntriesAsync().Result;
 
-
             foreach (var entry in entries)
             {
-                if (!entry.Url.StartsWith("http"))
-                {
-                    entry.Url = StringCipher.Decrypt(entry.Url, args[0]);
-                }
-                else
+                if (encode)
                 {
                     var originalUrl = entry.Url;
                     entry.Url = StringCipher.Encrypt(entry.Url, args[0]);
