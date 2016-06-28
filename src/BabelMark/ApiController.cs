@@ -62,6 +62,9 @@ namespace BabelMark
                             // Generates also a clean html in order to compare implems
                             var settings = HtmlSettings.Pretty();
                             settings.IsFragmentOnly = true;
+                            settings.MinifyCss = false;
+                            settings.MinifyCssAttributes = false;
+                            settings.MinifyJs = false;
                             var result = Uglify.Html(html, settings);
                             jobject["html_clean"] = result.Code;
 
