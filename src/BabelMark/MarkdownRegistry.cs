@@ -65,6 +65,12 @@ namespace BabelMark
                         entry.Url = StringCipher.Decrypt(entry.Url, passPhrase);
                     }
 
+                    // If the query doesn't end with a ? or a & we append ?
+                    if (!entry.Url.EndsWith("?") && !entry.Url.EndsWith("&"))
+                    {
+                        entry.Url = entry.Url + "?";
+                    }
+
                     newEntries.Add(entry);
                 }
 
