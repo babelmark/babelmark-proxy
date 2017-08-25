@@ -25,6 +25,7 @@ namespace BabelMark
         private static IJsEngine _jsengine;
         private static readonly HttpClient httpClient = new HttpClient();
         private static string _commonmarkjs;
+        private static string _mardownit;
 
         public ApiController(ILogger<ApiController> logger)
         {
@@ -34,9 +35,11 @@ namespace BabelMark
         public async Task<JObject> GetCommonMarkJs(string text)
         {
             _jsengine = _jsengine ?? JsEngineSwitcher.Instance.CreateDefaultEngine();
+
+            var version = "0.28.1";
             if (_commonmarkjs == null)
             {
-                _commonmarkjs = await httpClient.GetStringAsync("https://raw.githubusercontent.com/commonmark/commonmark.js/fe6ce5a3d266ae3e320bb2329967f6368c690335/dist/commonmark.min.js");
+                _commonmarkjs = await httpClient.GetStringAsync($"https://raw.githubusercontent.com/commonmark/commonmark.js/{version}/dist/commonmark.min.js");
                 _jsengine.Execute(_commonmarkjs);
             }
 
@@ -47,11 +50,39 @@ namespace BabelMark
             var result = _jsengine.Evaluate(script)?.ToString();
             _jsengine.RemoveVariable(inputval);
 
-            // TODO: Retrieve version from github directly
             var jsonResult = new JObject
             {
                 ["name"] = "commonmark.js",
-                ["version"] = "0.28.1",
+                ["version"] = version,
+                ["html"] = result
+            };
+
+            return jsonResult;
+        }
+
+        public async Task<JObject> GetMarkdownIt(string text)
+        {
+            _jsengine = _jsengine ?? JsEngineSwitcher.Instance.CreateDefaultEngine();
+
+            var version = "8.4.0";
+            if (_mardownit == null)
+            {
+                _mardownit = await httpClient.GetStringAsync($"https://raw.githubusercontent.com/markdown-it/markdown-it/{version}/dist/markdown-it.min.js");
+                _jsengine.Execute(_mardownit);
+                _jsengine.Evaluate("var MarkdownIt = markdownit();");
+            }
+
+            var inputval = "input_" + Guid.NewGuid().ToString().Replace("-", "_");
+            _jsengine.SetVariableValue(inputval, text);
+
+            var script = $"MarkdownIt.render({inputval});";
+            var result = _jsengine.Evaluate(script)?.ToString();
+            _jsengine.RemoveVariable(inputval);
+
+            var jsonResult = new JObject
+            {
+                ["name"] = "markdown-it",
+                ["version"] = version,
                 ["html"] = result
             };
 
@@ -78,6 +109,10 @@ namespace BabelMark
                     if (implem.Url == "js:commonmark.js")
                     {
                         jobject = await GetCommonMarkJs(text);
+                    }
+                    else if (implem.Url == "js:markdown-it")
+                    {
+                        jobject = await GetMarkdownIt(text);
                     }
                     else
                     {
