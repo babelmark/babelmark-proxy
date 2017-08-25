@@ -46,10 +46,10 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="..\src\BabelMark\MarkdownRegistry.cs">
+    <Compile Include="..\BabelMark\MarkdownRegistry.cs">
       <Link>MarkdownRegistry.cs</Link>
     </Compile>
-    <Compile Include="..\src\BabelMark\StringCipher.cs">
+    <Compile Include="..\BabelMark\StringCipher.cs">
       <Link>StringCipher.cs</Link>
     </Compile>
     <Compile Include="Program.cs" />

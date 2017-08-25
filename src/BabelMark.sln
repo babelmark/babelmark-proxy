@@ -1,16 +1,9 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 14
-VisualStudioVersion = 14.0.25123.0
+# Visual Studio 15
+VisualStudioVersion = 15.0.26730.10
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{9760F556-904A-4D32-B2C7-26C96804812B}"
-EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{97D510B6-49BF-45C8-B8BD-4EEDB2DF39E5}"
-	ProjectSection(SolutionItems) = preProject
-		global.json = global.json
-	EndProjectSection
-EndProject
-Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "BabelMark", "src\BabelMark\BabelMark.xproj", "{0AC60261-8618-417C-A5C9-55F5C689F20A}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BabelMark", "BabelMark\BabelMark.csproj", "{0AC60261-8618-417C-A5C9-55F5C689F20A}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EncryptApp", "EncryptApp\EncryptApp.csproj", "{52FDD876-87B6-48AD-8514-06C211E21A48}"
 EndProject
@@ -32,8 +25,7 @@ Global
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
 	EndGlobalSection
-	GlobalSection(NestedProjects) = preSolution
-		{0AC60261-8618-417C-A5C9-55F5C689F20A} = {9760F556-904A-4D32-B2C7-26C96804812B}
-		{52FDD876-87B6-48AD-8514-06C211E21A48} = {9760F556-904A-4D32-B2C7-26C96804812B}
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {39BF335E-D572-4DE4-9359-EFFBB1032F32}
 	EndGlobalSection
 EndGlobal
