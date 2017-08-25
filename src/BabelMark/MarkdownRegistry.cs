@@ -59,16 +59,19 @@ namespace BabelMark
                 newEntries.Clear();
                 foreach (var entry in jsonRegistry)
                 {
-                    // Decrypt an url if it doesn't starts by http
-                    if (!entry.Url.StartsWith("http"))
+                    if (!entry.Url.StartsWith("js:"))
                     {
-                        entry.Url = StringCipher.Decrypt(entry.Url, passPhrase);
-                    }
+                        // Decrypt an url if it doesn't starts by http
+                        if (!entry.Url.StartsWith("http"))
+                        {
+                            entry.Url = StringCipher.Decrypt(entry.Url, passPhrase);
+                        }
 
-                    // If the query doesn't end with a ? or a & we append ?
-                    if (!entry.Url.EndsWith("?") && !entry.Url.EndsWith("&"))
-                    {
-                        entry.Url = entry.Url + "?";
+                        // If the query doesn't end with a ? or a & we append ?
+                        if (!entry.Url.EndsWith("?") && !entry.Url.EndsWith("&"))
+                        {
+                            entry.Url = entry.Url + "?";
+                        }
                     }
 
                     newEntries.Add(entry);

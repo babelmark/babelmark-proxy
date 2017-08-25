@@ -7,6 +7,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Threading.Tasks.Dataflow;
+using JavaScriptEngineSwitcher.Core;
 using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -21,10 +22,40 @@ namespace BabelMark
     public class ApiController : Controller
     {
         private readonly ILogger<ApiController> logger;
+        private static IJsEngine _jsengine;
+        private static readonly HttpClient httpClient = new HttpClient();
+        private static string _commonmarkjs;
 
         public ApiController(ILogger<ApiController> logger)
         {
             this.logger = logger;
+        }
+
+        public async Task<JObject> GetCommonMarkJs(string text)
+        {
+            _jsengine = _jsengine ?? JsEngineSwitcher.Instance.CreateDefaultEngine();
+            if (_commonmarkjs == null)
+            {
+                _commonmarkjs = await httpClient.GetStringAsync("https://raw.githubusercontent.com/commonmark/commonmark.js/fe6ce5a3d266ae3e320bb2329967f6368c690335/dist/commonmark.min.js");
+                _jsengine.Execute(_commonmarkjs);
+            }
+
+            var inputval = "input_" + Guid.NewGuid().ToString().Replace("-", "_");
+            _jsengine.SetVariableValue(inputval, text);
+
+            var script = $"(new commonmark.HtmlRenderer()).render((new commonmark.Parser()).parse({inputval}));";
+            var result = _jsengine.Evaluate(script)?.ToString();
+            _jsengine.RemoveVariable(inputval);
+
+            // TODO: Retrieve version from github directly
+            var jsonResult = new JObject
+            {
+                ["name"] = "commonmark.js",
+                ["version"] = "0.28.1",
+                ["html"] = result
+            };
+
+            return jsonResult;
         }
 
         [HttpGet]
@@ -44,35 +75,39 @@ namespace BabelMark
                 JObject jobject;
                 try
                 {
-                    using (var httpClient = new HttpClient())
+                    if (implem.Url == "js:commonmark.js")
+                    {
+                        jobject = await GetCommonMarkJs(text);
+                    }
+                    else
                     {
                         var jsonText =
                             await httpClient.GetStringAsync(implem.Url + "text=" + Uri.EscapeDataString(text));
                         jobject = JObject.Parse(jsonText);
-                        var html = jobject["html"]?.ToString() ?? string.Empty;
+                    }
+                    var html = jobject["html"]?.ToString() ?? string.Empty;
 
-                        if (string.IsNullOrWhiteSpace(html))
-                        {
-                            html = string.Empty;
-                            jobject["html_clean"] = html;
-                            jobject["html_safe"] = html;
-                        }
-                        else
-                        {
-                            // Generates also a clean html in order to compare implems
-                            var settings = HtmlSettings.Pretty();
-                            settings.IsFragmentOnly = true;
-                            settings.MinifyCss = false;
-                            settings.MinifyCssAttributes = false;
-                            settings.MinifyJs = false;
-                            var result = Uglify.Html(html, settings);
-                            jobject["html_clean"] = result.Code;
+                    if (string.IsNullOrWhiteSpace(html))
+                    {
+                        html = string.Empty;
+                        jobject["html_clean"] = html;
+                        jobject["html_safe"] = html;
+                    }
+                    else
+                    {
+                        // Generates also a clean html in order to compare implems
+                        var settings = HtmlSettings.Pretty();
+                        settings.IsFragmentOnly = true;
+                        settings.MinifyCss = false;
+                        settings.MinifyCssAttributes = false;
+                        settings.MinifyJs = false;
+                        var result = Uglify.Html(html, settings);
+                        jobject["html_clean"] = result.Code;
 
-                            // Remove any javascript
-                            settings.RemoveJavaScript = true;
-                            result = Uglify.Html(html, settings);
-                            jobject["html_safe"] = result.Code;
-                        }
+                        // Remove any javascript
+                        settings.RemoveJavaScript = true;
+                        result = Uglify.Html(html, settings);
+                        jobject["html_safe"] = result.Code;
                     }
                 }
                 catch (Exception exception)
