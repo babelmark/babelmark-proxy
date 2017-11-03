@@ -15,6 +15,7 @@ namespace BabelMark
         public static void Main(string[] args)
         {
             var host = new WebHostBuilder()
+                .UseApplicationInsights()
                 .UseKestrel()
                 .UseContentRoot(Directory.GetCurrentDirectory())
                 .UseIISIntegration()

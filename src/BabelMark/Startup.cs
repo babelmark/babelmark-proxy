@@ -60,10 +60,6 @@ namespace BabelMark
                 builder.WithOrigins("http://babelmark.github.io", "https://babelmark.github.io", "http://johnmacfarlane.net").WithMethods("get").AllowCredentials();
             });
 
-            app.UseApplicationInsightsRequestTelemetry();
-
-            app.UseApplicationInsightsExceptionTelemetry();
-
             app.UseMiddleware<RequestThrottlingMiddleware>();
 
             app.UseMvc();
