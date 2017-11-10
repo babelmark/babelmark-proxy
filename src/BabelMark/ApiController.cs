@@ -90,6 +90,13 @@ namespace BabelMark
         }
 
         [HttpGet]
+        [Route("")]
+        public string Root()
+        {
+            return string.Empty;
+        }
+
+        [HttpGet]
         [Route("api/get")]
         public async Task Get([FromQuery] string text)
         {
