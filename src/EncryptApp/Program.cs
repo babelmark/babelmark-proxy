@@ -9,13 +9,18 @@ using Newtonsoft.Json;
 
 namespace EncryptApp
 {
+
+    /// <summary>
+    /// Programs to encode/decode the babelmark-registry (https://github.com/babelmark/babelmark-registry)
+    /// Or to encode locally an URL
+    /// </summary>
     class Program
     {
         static int Main(string[] args)
         {
-            if (args.Length != 2)
+            if (args.Length < 2 || args.Length > 3)
             {
-                Console.WriteLine("Usage: passphrase decode|encode");
+                Console.WriteLine("Usage: passphrase decode|encode [url?]");
                 return 1;
             }
 
@@ -26,28 +31,38 @@ namespace EncryptApp
                 return 1;
             }
 
+            var passphrase = args[0];
             var encode = args[1] == "encode";
 
-            Environment.SetEnvironmentVariable(MarkdownRegistry.PassphraseEnv, args[0]);
 
-            var entries = MarkdownRegistry.Instance.GetEntriesAsync().Result;
-
-            foreach (var entry in entries)
+            if (args.Length == 3)
             {
-                if (encode)
+                var url = args[2];
+                Console.WriteLine(encode ? StringCipher.Encrypt(url, passphrase) : StringCipher.Decrypt(url, passphrase));
+            }
+            else
+            {
+                Environment.SetEnvironmentVariable(MarkdownRegistry.PassphraseEnv, passphrase);
+                var entries = MarkdownRegistry.Instance.GetEntriesAsync().Result;
+
+                foreach (var entry in entries)
                 {
-                    var originalUrl = entry.Url;
-                    entry.Url = StringCipher.Encrypt(entry.Url, args[0]);
-                    var testDecrypt = StringCipher.Decrypt(entry.Url, args[0]);
-                    if (originalUrl != testDecrypt)
+                    if (encode)
                     {
-                        Console.WriteLine("Unexpected error while encrypt/decrypt. Not matching");
-                        return 1;
+                        var originalUrl = entry.Url;
+                        entry.Url = StringCipher.Encrypt(entry.Url, passphrase);
+                        var testDecrypt = StringCipher.Decrypt(entry.Url, passphrase);
+                        if (originalUrl != testDecrypt)
+                        {
+                            Console.WriteLine("Unexpected error while encrypt/decrypt. Not matching");
+                            return 1;
+                        }
                     }
                 }
+
+                Console.WriteLine(JsonConvert.SerializeObject(entries, Formatting.Indented));
             }
 
-            Console.WriteLine(JsonConvert.SerializeObject(entries, Formatting.Indented));
 
             return 0;
         }
