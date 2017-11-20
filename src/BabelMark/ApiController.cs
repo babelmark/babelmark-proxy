@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Net.Http;
 using System.Text;
 using System.Threading;
@@ -136,6 +137,10 @@ namespace BabelMark
                         {
                             ["html"] = await responseMessage.Content.ReadAsStringAsync()
                         };
+
+                        if (!string.IsNullOrWhiteSpace(implem.VersionHeader)) {
+                            jobject["version"] = responseMessage.Headers.GetValues(implem.VersionHeader).FirstOrDefault();
+                        }
                     }
                     else
                     {
