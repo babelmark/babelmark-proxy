@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Net.Http;
 using System.Text;
 using System.Threading;
@@ -21,15 +22,20 @@ namespace BabelMark
 {
     public class ApiController : Controller
     {
-        private readonly ILogger<ApiController> logger;
+        private readonly ILogger<ApiController> _logger;
         private static IJsEngine _jsengine;
-        private static readonly HttpClient httpClient = new HttpClient();
+        private static readonly HttpClient _httpClient = new HttpClient();
         private static string _commonmarkjs;
         private static string _mardownit;
 
+        static ApiController()
+        {
+            _httpClient.DefaultRequestHeaders.Add("User-Agent", "babelmark");
+        }
+
         public ApiController(ILogger<ApiController> logger)
         {
-            this.logger = logger;
+            this._logger = logger;
         }
 
         public async Task<JObject> GetCommonMarkJs(string text)
@@ -39,7 +45,7 @@ namespace BabelMark
             var version = "0.28.1";
             if (_commonmarkjs == null)
             {
-                _commonmarkjs = await httpClient.GetStringAsync($"https://raw.githubusercontent.com/commonmark/commonmark.js/{version}/dist/commonmark.min.js");
+                _commonmarkjs = await _httpClient.GetStringAsync($"https://raw.githubusercontent.com/commonmark/commonmark.js/{version}/dist/commonmark.min.js");
                 _jsengine.Execute(_commonmarkjs);
             }
 
@@ -67,7 +73,7 @@ namespace BabelMark
             var version = "8.4.0";
             if (_mardownit == null)
             {
-                _mardownit = await httpClient.GetStringAsync($"https://raw.githubusercontent.com/markdown-it/markdown-it/{version}/dist/markdown-it.min.js");
+                _mardownit = await _httpClient.GetStringAsync($"https://raw.githubusercontent.com/markdown-it/markdown-it/{version}/dist/markdown-it.min.js");
                 _jsengine.Execute(_mardownit);
                 _jsengine.Evaluate("var MarkdownIt = markdownit();");
             }
@@ -121,10 +127,25 @@ namespace BabelMark
                     {
                         jobject = await GetMarkdownIt(text);
                     }
+                    else if (implem.POST)
+                    {
+                        var content = new ByteArrayContent(Encoding.UTF8.GetBytes(text));
+                        content.Headers.Add("Content-Type", "text/plain");
+                        var responseMessage =
+                            await _httpClient.PostAsync(implem.Url, content);
+                        jobject = new JObject
+                        {
+                            ["html"] = await responseMessage.Content.ReadAsStringAsync()
+                        };
+
+                        if (!string.IsNullOrWhiteSpace(implem.VersionHeader)) {
+                            jobject["version"] = responseMessage.Headers.GetValues(implem.VersionHeader).FirstOrDefault();
+                        }
+                    }
                     else
                     {
                         var jsonText =
-                            await httpClient.GetStringAsync(implem.Url + "text=" + Uri.EscapeDataString(text));
+                            await _httpClient.GetStringAsync(implem.Url + "text=" + Uri.EscapeDataString(text));
                         jobject = JObject.Parse(jsonText);
                     }
                     var html = jobject["html"]?.ToString() ?? string.Empty;
@@ -154,7 +175,7 @@ namespace BabelMark
                 }
                 catch (Exception exception)
                 {
-                    logger.LogError("Unexpected exception: " + exception);
+                    _logger.LogError("Unexpected exception: " + exception);
 
                     // In case we have an error, we still return an object
                     jobject = new JObject
@@ -208,7 +229,7 @@ namespace BabelMark
             }
             catch (Exception ex)
             {
-                logger.LogError("Unexpected exception while fetching/returning: " + ex);
+                _logger.LogError("Unexpected exception while fetching/returning: " + ex);
             }
         }
 

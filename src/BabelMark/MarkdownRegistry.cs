@@ -18,6 +18,10 @@ namespace BabelMark
         public string Repo { get; set; }
 
         public bool CommonMark { get; set; }
+
+        public bool POST { get; set; }
+
+        public string VersionHeader { get; set; }
     }
 
     public class MarkdownRegistry
