@@ -38,31 +38,38 @@ namespace BabelMark
         // This method gets called by the runtime. Use this method to add services to the container
         public void ConfigureServices(IServiceCollection services)
         {
-            // Add framework services.
-            services.AddApplicationInsightsTelemetry(
-                Configuration);
-
             // Add JavaScriptEngineSwitcher services to the services container.
             services.AddJsEngineSwitcher(options => options.DefaultEngineName = ChakraCoreJsEngine.EngineName)
                 .AddChakraCore();
 
-            services.AddMvc();
+
+
+            services.AddControllers();
+
+            // Add framework services.
+            services.AddApplicationInsightsTelemetry(Configuration);
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline
         public void Configure(IApplicationBuilder app, IHostingEnvironment env, ILoggerFactory loggerFactory)
         {
-            loggerFactory.AddConsole(Configuration.GetSection("Logging"));
-            loggerFactory.AddDebug();
-
-            app.UseCors(builder =>
+            if (env.IsDevelopment())
             {
-                builder.WithOrigins("http://babelmark.github.io", "https://babelmark.github.io", "http://johnmacfarlane.net").WithMethods("get").AllowCredentials();
+                app.UseDeveloperExceptionPage();
+            }
+
+            app.UseCors(builder => builder.WithOrigins("http://babelmark.github.io", "https://babelmark.github.io", "http://johnmacfarlane.net").WithMethods("get").AllowCredentials());
+
+            app.UseHttpsRedirection();
+
+            app.UseRouting();
+
+            app.UseAuthorization();
+
+            app.UseEndpoints(endpoints =>
+            {
+                endpoints.MapControllers();
             });
-
-            app.UseMiddleware<RequestThrottlingMiddleware>();
-
-            app.UseMvc();
         }
     }
 }

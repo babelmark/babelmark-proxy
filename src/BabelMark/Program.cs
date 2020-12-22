@@ -1,12 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Reflection;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.Builder;
-using Newtonsoft.Json;
+﻿using Microsoft.AspNetCore.Hosting;
+using Microsoft.Extensions.Hosting;
 
 namespace BabelMark
 {
@@ -14,16 +7,14 @@ namespace BabelMark
     {
         public static void Main(string[] args)
         {
-            var host = new WebHostBuilder()
-                .UseApplicationInsights()
-                .UseKestrel()
-                .UseContentRoot(Directory.GetCurrentDirectory())
-                .UseIISIntegration()
-                //.UseUrls("http://localhost:55312")
-                .UseStartup<Startup>()
-                .Build();
-
-            host.Run();
+            CreateHostBuilder(args).Build().Run();
         }
+
+        public static IHostBuilder CreateHostBuilder(string[] args) =>
+            Host.CreateDefaultBuilder(args)
+                .ConfigureWebHostDefaults(webBuilder =>
+                {
+                    webBuilder.UseStartup<Startup>();
+                });
     }
 }
