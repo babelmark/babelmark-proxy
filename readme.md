@@ -18,7 +18,7 @@ This software is released under the [BSD-Clause 2 license](https://github.com/ba
 
 ## Author
 
-Alexandre MUTEL aka [xoofx](http://xoofx.com)
+Alexandre MUTEL aka [xoofx](https://xoofx.github.io)
 
 
 
