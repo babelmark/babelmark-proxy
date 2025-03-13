@@ -1,9 +1,11 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
+using System.Net.Security;
+using System.Security.Authentication;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -20,16 +22,23 @@ using NUglify.Html;
 
 namespace BabelMark
 {
-    public class ApiController : Controller
+    public class ApiController : ControllerBase
     {
         private readonly ILogger<ApiController> _logger;
         private static IJsEngine _jsengine;
-        private static readonly HttpClient _httpClient = new HttpClient();
+        private static readonly HttpClient _httpClient;
         private static string _commonmarkjs;
         private static string _mardownit;
 
         static ApiController()
         {
+            _httpClient = new HttpClient(new SocketsHttpHandler()
+            {
+                SslOptions = new SslClientAuthenticationOptions()
+                {
+                    EnabledSslProtocols = SslProtocols.Tls13 | SslProtocols.Tls12
+                }
+            });
             _httpClient.DefaultRequestHeaders.Add("User-Agent", "babelmark");
         }
 
@@ -40,7 +49,7 @@ namespace BabelMark
 
         public async Task<JObject> GetCommonMarkJs(string text)
         {
-            _jsengine = _jsengine ?? JsEngineSwitcher.Instance.CreateDefaultEngine();
+            _jsengine = _jsengine ?? JsEngineSwitcher.Current.CreateDefaultEngine();
 
             var version = "0.28.1";
             if (_commonmarkjs == null)
@@ -68,7 +77,7 @@ namespace BabelMark
 
         public async Task<JObject> GetMarkdownIt(string text)
         {
-            _jsengine = _jsengine ?? JsEngineSwitcher.Instance.CreateDefaultEngine();
+            _jsengine = _jsengine ?? JsEngineSwitcher.Current.CreateDefaultEngine();
 
             var version = "8.4.0";
             if (_mardownit == null)

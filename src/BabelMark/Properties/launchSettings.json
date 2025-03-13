@@ -3,7 +3,10 @@
     "BabelMark": {
       "commandName": "Project",
       "launchBrowser": true,
-      "launchUrl": "api/get?text=test"
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development"
+      },
+      "applicationUrl": "https://localhost:55198;http://localhost:55199"
     }
   }
 }

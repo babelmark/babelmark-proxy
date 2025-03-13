@@ -1,96 +1,95 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
 
-namespace BabelMark
+namespace BabelMark;
+
+public class MarkdownEntry
 {
-    public class MarkdownEntry
+    public string Name { get; set; }
+
+    public string Url { get; set; }
+
+    public string Lang { get; set; }
+
+    public string Repo { get; set; }
+
+    public bool CommonMark { get; set; }
+
+    public bool POST { get; set; }
+
+    public string VersionHeader { get; set; }
+}
+
+public class MarkdownRegistry
+{
+    public const string PassphraseEnv = "BABELMARK_PASSPHRASE";
+
+    private List<MarkdownEntry> entries;
+    private DateTime lastTime;
+
+    private MarkdownRegistry()
     {
-        public string Name { get; set; }
-
-        public string Url { get; set; }
-
-        public string Lang { get; set; }
-
-        public string Repo { get; set; }
-
-        public bool CommonMark { get; set; }
-
-        public bool POST { get; set; }
-
-        public string VersionHeader { get; set; }
+        entries = new List<MarkdownEntry>();
     }
 
-    public class MarkdownRegistry
+    public async Task<List<MarkdownEntry>> GetEntriesAsync()
     {
-        public const string PassphraseEnv = "BABELMARK_PASSPHRASE";
-
-        private List<MarkdownEntry> entries;
-        private DateTime lastTime;
-
-        private MarkdownRegistry()
+        var newEntries = entries.ToList();
+        if (newEntries.Count > 0 && (DateTime.Now - lastTime).TotalHours <= 1)
         {
-            entries = new List<MarkdownEntry>();
+            return newEntries;
         }
 
-        public async Task<List<MarkdownEntry>> GetEntriesAsync()
+        var passPhrase = Environment.GetEnvironmentVariable(PassphraseEnv)?.Trim();
+        if (string.IsNullOrWhiteSpace(passPhrase))
         {
-            var newEntries = entries.ToList();
-            if (newEntries.Count > 0 && (DateTime.Now - lastTime).TotalHours <= 1)
+            throw new InvalidOperationException("The BABELMARK_PASSPHRASE env is empty");
+        }
+
+        try
+        {
+            var client = new HttpClient();
+            var textRegistry =
+                await
+                    client.GetStringAsync(
+                        "https://raw.githubusercontent.com/babelmark/babelmark-registry/master/registry.json");
+
+            var jsonRegistry = JsonConvert.DeserializeObject<List<MarkdownEntry>>(textRegistry);
+
+            newEntries.Clear();
+            foreach (var entry in jsonRegistry)
             {
-                return newEntries;
-            }
-
-            var passPhrase = Environment.GetEnvironmentVariable(PassphraseEnv)?.Trim();
-            if (string.IsNullOrWhiteSpace(passPhrase))
-            {
-                throw new InvalidOperationException("The BABELMARK_PASSPHRASE env is empty");
-            }
-
-            try
-            {
-                var client = new HttpClient();
-                var textRegistry =
-                    await
-                        client.GetStringAsync(
-                            "https://raw.githubusercontent.com/babelmark/babelmark-registry/master/registry.json");
-
-                var jsonRegistry = JsonConvert.DeserializeObject<List<MarkdownEntry>>(textRegistry);
-
-                newEntries.Clear();
-                foreach (var entry in jsonRegistry)
+                if (!entry.Url.StartsWith("js:"))
                 {
-                    if (!entry.Url.StartsWith("js:"))
+                    // Decrypt an url if it doesn't starts by http
+                    if (!entry.Url.StartsWith("http"))
                     {
-                        // Decrypt an url if it doesn't starts by http
-                        if (!entry.Url.StartsWith("http"))
-                        {
-                            entry.Url = StringCipher.Decrypt(entry.Url, passPhrase);
-                        }
-
-                        // If the query doesn't end with a ? or a & we append ?
-                        if (!entry.Url.EndsWith("?") && !entry.Url.EndsWith("&"))
-                        {
-                            entry.Url = entry.Url + "?";
-                        }
+                        entry.Url = StringCipher.Decrypt(entry.Url, passPhrase);
                     }
 
-                    newEntries.Add(entry);
+                    // If the query doesn't end with a ? or a & we append ?
+                    if (!entry.Url.EndsWith("?") && !entry.Url.EndsWith("&"))
+                    {
+                        entry.Url = entry.Url + "?";
+                    }
                 }
 
-                entries = newEntries;
-                lastTime = DateTime.Now;
-            }
-            catch (HttpRequestException) when(entries.Count > 0) // Don't throw an exception if we have already entries
-            {
+                newEntries.Add(entry);
             }
 
-            return entries.ToList();
+            entries = newEntries;
+            lastTime = DateTime.Now;
+        }
+        catch (HttpRequestException) when(entries.Count > 0) // Don't throw an exception if we have already entries
+        {
         }
 
-        public static MarkdownRegistry Instance { get; } = new MarkdownRegistry();
+        return entries.ToList();
     }
+
+    public static MarkdownRegistry Instance { get; } = new MarkdownRegistry();
 }
